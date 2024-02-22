@@ -11,7 +11,8 @@ import {
     serverTimestamp,
     setDoc,
     doc,
-    deleteDoc
+    deleteDoc,
+    updateDoc
 } from "firebase/firestore";
 
 
@@ -46,7 +47,7 @@ getDocs(user)
         });
 
         // Affichage des données des utilisateurs dans la console
-        console.log('lecture de datas mais en temps réel', recuperer_user_inArray);
+        // console.log('lecture de datas mais en temps réel', recuperer_user_inArray);
     });
 
 
@@ -118,10 +119,26 @@ delecteCityForm.addEventListener('submit', (event) => {
 
     deleteDoc(doc_a_supprimer)
         .then(() => delecteCityForm.reset());
+
+        console.log('delete success !');
 })
 
 
+                            /*********************************************
+                             *            MODIFIER UN DOCUMENT 
+                             ************************************************/
 
+const updateCityForm = document.querySelector('.modifier');
+
+updateCityForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const doc_a_modifier = doc(db, "Villes", updateCityForm.id.value);
+
+    updateDoc(doc_a_modifier, { ville: "la ville à jour" })
+        .then(() => updateCityForm.reset());
+        console.log('update success !');
+})
 
 
 
