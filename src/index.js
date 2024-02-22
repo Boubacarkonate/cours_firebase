@@ -10,7 +10,8 @@ import {
     addDoc,
     serverTimestamp,
     setDoc,
-    doc
+    doc,
+    deleteDoc
 } from "firebase/firestore";
 
 
@@ -99,8 +100,29 @@ onSnapshot(cities, (snapshot) => {
     });
 
     // Affichage des données des utilisateurs dans la console
-    console.log('lecture des datas en base de données en temps réel', recuperer_city_inArray);
+    console.log('lecture des datas en base de données en temps réel avec onSnapshot()', recuperer_city_inArray);
+});
+
+
+
+                            /*********************************************
+                             *            SUPPRIMER UN DOCUMENT 
+                             ************************************************/
+
+const delecteCityForm = document.querySelector('.suppression');
+
+delecteCityForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const doc_a_supprimer = doc(db, "Villes", delecteCityForm.id.value);
+
+    deleteDoc(doc_a_supprimer)
+        .then(() => delecteCityForm.reset());
 })
+
+
+
+
 
 
 
