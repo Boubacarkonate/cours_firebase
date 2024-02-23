@@ -3,22 +3,24 @@ import { initializeApp } from "firebase/app";
 
 // Importer les fonctions nécessaires pour interagir avec Firestore depuis le module firebase/firestore
 import { 
-    getDocs,         // Fonction pour obtenir tous les documents d'une collection
-    collection,      // Fonction pour référencer une collection Firestore
-    getFirestore,    // Fonction pour initialiser une instance Firestore
-    onSnapshot,       // Fonction pour écouter les modifications dans une collection
-    addDoc,
-    serverTimestamp,
-    setDoc,
-    doc,
-    deleteDoc,
-    updateDoc,
-    query,
-    where,
-    orderBy,
-    limit,
-    collectionGroup
+  getDocs,         // Fonction pour obtenir tous les documents d'une collection
+  collection,      // Fonction pour référencer une collection Firestore
+  getFirestore,    // Fonction pour initialiser une instance Firestore
+  onSnapshot,      // Fonction pour écouter les modifications dans une collection
+  addDoc,          // Fonction pour ajouter un nouveau document à une collection
+  serverTimestamp, // Fonction pour obtenir une horodatage de serveur
+  setDoc,          // Fonction pour définir ou remplacer des données pour un document
+  doc,             // Fonction pour référencer un document spécifique
+  deleteDoc,       // Fonction pour supprimer un document spécifique
+  updateDoc,       // Fonction pour mettre à jour un document spécifique
+  query,           // Fonction pour créer une requête Firestore
+  where,           // Fonction pour spécifier des conditions de filtrage dans une requête
+  orderBy,         // Fonction pour spécifier l'ordre de tri dans une requête
+  limit,           // Fonction pour limiter le nombre de résultats dans une requête
+  collectionGroup  // Fonction pour effectuer une requête sur un groupe de collections
 } from "firebase/firestore";
+
+import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithRedirect, signOut } from "firebase/auth";
 
 
 // Your web app's Firebase configuration
@@ -86,12 +88,11 @@ addCityForm.addEventListener('submit', (event) => {
     //     created_date: serverTimestamp()
     // }).then(() => addCityForm.reset());
 
-    console.log('ville ajoutée avec succés avec addDoc() !');
+    // console.log('ville ajoutée avec succés avec addDoc() !');
 
 });
 
-
-                                            
+                                    
                             /***************************************************************
                              *            RECUPERER UN DOCUMENT EN TEMPS REEL (real time)
                              ***************************************************************/
@@ -110,205 +111,100 @@ onSnapshot(cities, (snapshot) => {
 });
 
 
-
                             /*********************************************
                              *            SUPPRIMER UN DOCUMENT 
                              ************************************************/
 
-const delecteCityForm = document.querySelector('.suppression');
+// const delecteCityForm = document.querySelector('.suppression');
 
-delecteCityForm.addEventListener('submit', (event) => {
+// delecteCityForm.addEventListener('submit', (event) => {
+//     event.preventDefault();
+
+//     const doc_a_supprimer = doc(db, "Villes", delecteCityForm.id.value);
+
+//     deleteDoc(doc_a_supprimer)
+//         .then(() => delecteCityForm.reset());
+
+//         console.log('delete success !');
+// })
+
+// Sélection du formulaire de suppression
+const deleteCityForm = document.querySelector('.suppression');
+
+// Ajout d'un écouteur d'événements sur la soumission du formulaire
+deleteCityForm.addEventListener('submit', (event) => {
+    // Empêcher le comportement par défaut du formulaire
     event.preventDefault();
 
-    const doc_a_supprimer = doc(db, "Villes", delecteCityForm.id.value);
+    // Récupération de l'ID du document à supprimer depuis le champ du formulaire
+    const docId = deleteCityForm.id.value;
 
-    deleteDoc(doc_a_supprimer)
-        .then(() => delecteCityForm.reset());
+    // Référence au document à supprimer dans la collection "Villes"
+    const docToDelete = doc(db, "Villes", docId);
 
-        console.log('delete success !');
-})
+    // Suppression du document
+    deleteDoc(docToDelete)
+        .then(() => {
+            // Réinitialisation du formulaire après la suppression réussie
+            deleteCityForm.reset();
+            console.log('Document supprimé avec succès !');
+        })
+        .catch((error) => {
+            // Gestion des erreurs en cas d'échec de la suppression
+            console.error('Erreur lors de la suppression du document :', error);
+        });
+});
 
 
                             /*********************************************
                              *            MODIFIER UN DOCUMENT 
                              ************************************************/
 
+// const updateCityForm = document.querySelector('.modifier');
+
+// updateCityForm.addEventListener('submit', (event) => {
+//     event.preventDefault();
+
+//     const doc_a_modifier = doc(db, "Villes", updateCityForm.id.value);
+
+//     updateDoc(doc_a_modifier, { ville: "la ville à jour" })
+//         .then(() => updateCityForm.reset());
+//         console.log('update success !');
+// })
+
+
+// Sélection du formulaire de mise à jour
 const updateCityForm = document.querySelector('.modifier');
 
+// Ajout d'un écouteur d'événements sur la soumission du formulaire
 updateCityForm.addEventListener('submit', (event) => {
+    // Empêcher le comportement par défaut du formulaire
     event.preventDefault();
 
-    const doc_a_modifier = doc(db, "Villes", updateCityForm.id.value);
+    // Récupération de l'ID du document à mettre à jour depuis le champ du formulaire
+    const docId = updateCityForm.id.value;
 
-    updateDoc(doc_a_modifier, { ville: "la ville à jour" })
-        .then(() => updateCityForm.reset());
-        console.log('update success !');
-})
+    // Référence au document à mettre à jour dans la collection "Villes"
+    const docToUpdate = doc(db, "Villes", docId);
+
+    // Mise à jour des données du document
+    updateDoc(docToUpdate, { ville: "la ville mise à jour" })
+        .then(() => {
+            // Réinitialisation du formulaire après la mise à jour réussie
+            updateCityForm.reset();
+            console.log('Document mis à jour avec succès !');
+        })
+        .catch((error) => {
+            // Gestion des erreurs en cas d'échec de la mise à jour
+            console.error('Erreur lors de la mise à jour du document :', error);
+        });
+});
 
 
                             /**************************************************************
-                             *            LES REQUETES CLOUD FIRESTORE : simples et composées
+                             *       LES REQUETES CLOUD FIRESTORE : simples et composées
                              *************************************************************/
 
-//Ajouter un dataset dans BK collection "Villes"
-Promise.all([
-    setDoc(doc(cities, "KIN"), {
-        pays: "Rd Congo",
-        ville: "Kinshasa",
-        capitale: true,
-        dateDajout: new Date("Jul 1, 2022"),
-        population: 15000000,
-        communes: [
-        "Gombe",
-        "Bandale",
-        "Kinshasa",
-        "LingwaBK",
-        "Limete",
-        "Ngaliema",
-        ],
-    }),
-    setDoc(doc(cities, "BK"), {
-        pays: "Rd Congo",
-        ville: "Bukavu",
-        capitale: false,
-        dateDajout: new Date("Jul 6, 2022"),
-        population: 2000000,
-        communes: ["Ibanda", "Kadutu", "Bagira"],
-    }),
-    setDoc(doc(cities, "DEGO"), {
-        pays: "Rd Congo",
-        ville: "Goma",
-        capitale: false,
-        dateDajout: new Date("Jul 9, 2022"),
-        population: 1000000,
-        communes: ["Goma", "Karisimbi"],
-    }),
-    setDoc(doc(cities, "BJ"), {
-        pays: "Burundi",
-        ville: "Bujumbura",
-        capitale: false,
-        dateDajout: new Date("Jul 15, 2022"),
-        population: 1500000,
-        communes: ["Ntahangwa", "Mukazi", "Muha"],
-    }),
-    setDoc(doc(cities, "GTG"), {
-        pays: "Burundi",
-        ville: "Gitega",
-        capitale: true,
-        dateDajout: new Date("Jul 17, 2022"),
-        population: 130000,
-        communes: ["Magara", "Nyamugari", "Rutonde"],
-    }),
-    setDoc(doc(cities, "KGL"), {
-        pays: "Rwanda",
-        ville: "Kigali",
-        capitale: true,
-        dateDajout: new Date("Jul 28, 2022"),
-        population: 1500000,
-        communes: ["Gasabo", "Kicukiro", "Nyarugenge"],
-    }),
-    setDoc(doc(cities, "GSG"), {
-        pays: "Rwanda",
-        ville: "Gisenyi",
-        capitale: false,
-        dateDajout: new Date("Jul 18, 2022"),
-        population: 160000,
-        communes: ["Kibuye", "Cyangugu"],
-    }),
-    setDoc(doc(cities, "NBO"), {
-        pays: "Kenya",
-        ville: "Nairobi",
-        capitale: true,
-        dateDajout: new Date("Jul 10, 2022"),
-        population: 4000000,
-        communes: [
-        "WestBKnds",
-        "Dagoretti",
-        "BKngata",
-        "Kamukunji",
-        "Embakasi",
-        "Njiru",
-        "Kakadara",
-        ],
-    }),
-    setDoc(doc(cities, "MBS"), {
-        pays: "Kenya",
-        ville: "Mombasa",
-        capitale: false,
-        dateDajout: new Date("Jul 3, 2022"),
-        population: 120800,
-        communes: ["Changwaniwe", "Kisauni", "Koni", "Lokini"],
-    }),
-    ])
-    .then(() => console.log("Données 'Villes' ajoutées avec succès"))
-    .catch((error) => console.log(error.message));
-
-
-//Ajouter un dataset dans BK sous-collection "habitants"
-Promise.all([
-    addDoc(collection(cities, "KIN", "habitants"), {
-      noms: "Patrick Bashizi",
-      age: "35 ans",
-      sexe: "M",
-    }),
-    addDoc(collection(cities, "KIN", "habitants"), {
-      noms: "Odette Kavira",
-      age: "32 ans",
-      sexe: "F",
-    }),
-    addDoc(collection(cities, "BK", "habitants"), {
-      noms: "Alain Cisirika",
-      age: "27 ans",
-      sexe: "M",
-    }),
-    addDoc(collection(cities, "BK", "habitants"), {
-      noms: "Josephine Romana",
-      age: "22 ans",
-      sexe: "F",
-    }),
-    addDoc(collection(cities, "DEGO", "habitants"), {
-      noms: "Lens Mutombo",
-      age: "30 ans",
-      sexe: "M",
-    }),
-    addDoc(collection(cities, "DEGO", "habitants"), {
-      noms: "Josephine Ndeze",
-      age: "23 ans",
-      sexe: "F",
-    }),
-    addDoc(collection(cities, "BJ", "habitants"), {
-      noms: "Jean Lionel",
-      age: "28 ans",
-      sexe: "M",
-    }),
-    addDoc(collection(cities, "GTG", "habitants"), {
-      noms: "Chouella Kayonga",
-      age: "23 ans",
-      sexe: "F",
-    }),
-    addDoc(collection(cities, "KGL", "habitants"), {
-      noms: "Cynthia React",
-      age: "24 ans",
-      sexe: "F",
-    }),
-    addDoc(collection(cities, "GSG", "habitants"), {
-      noms: "Esther Android",
-      age: "26 ans",
-      sexe: "M",
-    }),
-    addDoc(collection(cities, "NBO", "habitants"), {
-      noms: "Tabitha CrowSource",
-      age: "29 ans",
-      sexe: "F",
-    }),
-    addDoc(collection(cities, "MBS", "habitants"), {
-      noms: "Wayne Angular",
-      age: "30 ans",
-      sexe: "M",
-    }),
-  ])
-    .then(() => console.log("Données 'habitants' ajoutées avec succès"))
-    .catch((error) => console.log(error.message));
 
 
     //////////////////// LES REQUETES SIMPLES //////////////////////
@@ -414,10 +310,11 @@ onSnapshot(q10, (snapshot) => {
 /* Requêtes de groupe des collections
    Référence de la sous-collection (NB: ID unique pour les sous-collections sont des collections d'un document existant (créé dans une collection) 
                                             COLLECTION
-                                                  |--
-                                                  Document
-                                                    |---
-                                                      collection(sous-collection)
+                                                  |
+                                                  ---> Document
+                                                            |
+                                                            ---> collection(sous-collection)
+                                                      
    */
 
 const habitantsRef = collectionGroup(db, "habitants");    
@@ -441,3 +338,49 @@ onSnapshot(q12, (snapshot) => {
   console.log('q12. Récuperer les habitants feminins : ', recuperer_city_inArray);
 });
 
+
+                              /**************************************************************
+                             *                      AUTHENTICATION
+                             *************************************************************/
+
+// Initialise l'objet d'authentification avec l'application Firebase  
+const auth = getAuth(app);
+
+//// Avec un compte GOOGLE ////////////                         PS: plutôt à utiliser pour des applications publiques
+
+// Sélectionne le bouton de connexion Google dans le DOM
+const signInGoogleBtn = document.querySelector('.googleLogin');
+
+// Ajoute un écouteur d'événements pour le clic sur le bouton de connexion Google
+signInGoogleBtn.addEventListener('click', () => {
+  // Démarre le processus d'authentification avec redirection vers Google
+  signInWithRedirect(auth, new GoogleAuthProvider());
+  // Affiche un message indiquant que l'authentification est en cours
+  console.log('Authentification en cours...');
+});
+
+// Écoute les changements d'état d'authentification (connexion/déconnexion)
+onAuthStateChanged(auth, (user) => {
+  // Affiche dans la console l'état de l'utilisateur (connecté ou null (si déconnecté) )
+  console.log("Changement d'état de l'utilisateur : ", user);
+});
+
+// Sélectionne le bouton de déconnexion dans le DOM
+const logoutBtn = document.querySelector('.logout');
+
+// Ajoute un écouteur d'événements pour le clic sur le bouton de déconnexion
+logoutBtn.addEventListener('click', () => {
+  // Déconnecte l'utilisateur actuellement connecté
+  signOut(auth)
+    .then(() => {
+      // Affiche un message indiquant que l'utilisateur est déconnecté
+      console.log('Utilisateur déconnecté');
+    })
+    .catch((err) => {
+      // En cas d'erreur, affiche le message d'erreur dans la console
+      console.log(err.message);
+    });
+});
+
+
+////// avec un compte EMAIL et PASSWORD////////////////     PS: bien pour les applications privéess
