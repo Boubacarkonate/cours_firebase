@@ -20,7 +20,7 @@ import {
   collectionGroup  // Fonction pour effectuer une requête sur un groupe de collections
 } from "firebase/firestore";
 
-import { GoogleAuthProvider, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithRedirect, signOut } from "firebase/auth";
+import { GoogleAuthProvider, createUserWithEmailAndPassword, getAuth, isSignInWithEmailLink, onAuthStateChanged, sendSignInLinkToEmail, signInWithEmailAndPassword, signInWithEmailLink, signInWithRedirect, signOut } from "firebase/auth";
 
 
 // Your web app's Firebase configuration
@@ -346,7 +346,7 @@ onSnapshot(q12, (snapshot) => {
 // Initialise l'objet d'authentification avec l'application Firebase  
 const auth = getAuth(app);
 
-//// Avec un compte GOOGLE ////////////                         PS: plutôt à utiliser pour des applications publiques
+                                            ///////////// Avec un compte GOOGLE ////////////                         PS: plutôt à utiliser pour des applications publiques
 
 // Sélectionne le bouton de connexion Google dans le DOM
 const signInGoogleBtn = document.querySelector('.googleLogin');
@@ -365,6 +365,127 @@ onAuthStateChanged(auth, (user) => {
   console.log("Changement d'état de l'utilisateur : ", user);
 });
 
+
+
+                                              ////// avec un compte EMAIL et PASSWORD  ////////////////     PS: bien pour les applications privées
+
+// Sélectionne le formulaire d'inscription dans le DOM
+const signupForm = document.querySelector('.signup');
+
+// Ajoute un écouteur d'événements pour la soumission du formulaire d'inscription
+signupForm.addEventListener('submit', (e) => {
+  e.preventDefault(); // Empêche le comportement par défaut du formulaire
+
+  // Récupère l'adresse e-mail et le mot de passe saisis dans le formulaire
+  const email = signupForm.email.value;
+  const password = signupForm.password.value;
+  
+  // Crée un nouvel utilisateur avec l'adresse e-mail et le mot de passe fournis
+  createUserWithEmailAndPassword(auth, email, password)
+      .then((credentials) => {
+        // Affiche un message indiquant que l'utilisateur est inscrit avec succès
+        console.log("Utilisateur inscrit :", credentials.user);
+        // Réinitialise le formulaire
+        signupForm.reset();
+      })
+      .catch((err) => {
+        // En cas d'erreur, affiche le message d'erreur dans la console
+        console.log(err.message);
+      });
+});
+
+                                                ////// avec un LIEN EMAIL vérifié (sans avoir besoin de password) //////////////// 
+
+// Sélectionne le formulaire d'authentification sans mot de passe dans le DOM
+const passwordLessForm = document.querySelector('.passwordless');
+
+// Ajoute un écouteur d'événements pour la soumission du formulaire d'authentification sans mot de passe
+passwordLessForm.addEventListener('submit', (e) => {
+  e.preventDefault(); // Empêche le comportement par défaut du formulaire
+
+  // Récupère l'adresse e-mail saisie dans le formulaire
+  const email = passwordLessForm.email.value;  
+
+  // Options pour la gestion du lien de connexion
+  const actionCodeSettings = {
+    url: "http://localhost:5500/dist/index.html", // URL à ouvrir une fois le lien de connexion utilisé
+    handleCodeInApp: true, // Traiter le code de vérification dans l'application
+  };
+
+  // Envoie du lien de connexion au courrier électronique spécifié
+  sendSignInLinkToEmail(auth, email, actionCodeSettings)
+      .then(() => {
+        // Enregistre l'e-mail dans le stockage local du navigateur
+        window.localStorage.setItem('emailAuthentication', email);
+        // Réinitialise le formulaire
+        passwordLessForm.reset();
+        // Affiche un message indiquant que l'e-mail a été envoyé
+        console.log("Email envoyé à :", email);
+      })
+      .catch(err => {
+        // En cas d'erreur, affiche le message d'erreur dans la console
+        console.log(err.message);
+      });
+});
+
+// Vérifie si la page actuelle contient un lien d'authentification par e-mail
+if (isSignInWithEmailLink(auth, window.location.href)) {
+  // Récupère l'e-mail à partir du stockage local du navigateur
+  let email = window.localStorage.getItem("emailAuthentication");
+
+  // Si l'e-mail n'est pas trouvé dans le stockage local, demande à l'utilisateur de le fournir via une boîte de dialogue
+  if (!email) {
+    email = window.prompt("Please provide your email for confirmation");
+  }
+  
+  // Authentifie l'utilisateur avec l'e-mail et le lien d'authentification par e-mail
+  signInWithEmailLink(auth, email, window.location.href)
+    .then((result) => {
+      // En cas de réussite, affiche les informations de l'utilisateur dans la console
+      console.log(result.user);
+      // Supprime l'e-mail du stockage local
+      window.localStorage.removeItem("emailAuthentication");
+    })
+    .catch((error) => {
+      // En cas d'échec, affiche le message d'erreur dans la console
+      console.log(error.message);
+    });
+}
+
+
+
+
+
+
+
+                            /**************************************************************
+                             *                      CONNEXION
+                             *************************************************************/
+
+const loginForm = document.querySelector('.login');
+
+loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const email = loginForm.email.value;
+  const password = loginForm.password.value;
+  
+  signInWithEmailAndPassword(auth, email, password)
+      .then((credentials) => {
+        console.log("utilisateur connecté", credentials.user);
+        loginForm.reset();
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+});
+
+
+                            /**************************************************************
+                             *                      DECONNEXION
+                             *************************************************************/
+
+
 // Sélectionne le bouton de déconnexion dans le DOM
 const logoutBtn = document.querySelector('.logout');
 
@@ -380,25 +501,4 @@ logoutBtn.addEventListener('click', () => {
       // En cas d'erreur, affiche le message d'erreur dans la console
       console.log(err.message);
     });
-});
-
-
-////// avec un compte EMAIL et PASSWORD + lien de confirmation ////////////////     PS: bien pour les applications privées
-
-const signupForm = document.querySelector('.signup');
-
-signupForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-
-  const email = signupForm.email.value;
-  const password = signupForm.password.value;
-  
-  createUserWithEmailAndPassword(auth, email, password)
-      .then((credentials) => {
-        console.log("utilisateur inscrit", credentials.user);
-        signupForm.reset();
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
 });
