@@ -16,7 +16,8 @@ import {
     query,
     where,
     orderBy,
-    limit
+    limit,
+    collectionGroup
 } from "firebase/firestore";
 
 
@@ -146,7 +147,7 @@ updateCityForm.addEventListener('submit', (event) => {
 
 
                             /**************************************************************
-                             *            LES REQUETES FIRESTORE : simple et compléxe
+                             *            LES REQUETES CLOUD FIRESTORE : simples et composées
                              *************************************************************/
 
 //Ajouter un dataset dans BK collection "Villes"
@@ -330,6 +331,27 @@ const q4 = query(
 //5. Récuperer les villes dont la population est superieure à 1M
 const q5 = query(cities, where("population", ">", 1000000));
 
+// Écoute des modifications dans les documents qui correspondent à la requête q1
+onSnapshot(q5, (snapshot) => {
+  let recuperer_city_inArray = []; // Initialisation d'un tableau pour stocker les données des villes récupérées
+  // Parcours de chaque document dans le snapshot
+  snapshot.docs.forEach((doc) => {
+      // Ajout des données de chaque document dans le tableau recuperer_city_inArray
+      recuperer_city_inArray.push({ ...doc.data(), id: doc.id }); // On utilise spread operator pour obtenir les données du document et on ajoute l'ID du document
+  });
+
+  // Affichage des données des villes dans la console
+  // console.log('q1. requête pour obtenir toutes les villes de la RD Congo : ', recuperer_city_inArray);
+  // console.log('q2. requête pour obtenir toutes les villes exceptées celles de la RD Congo : ', recuperer_city_inArray);
+  // console.log('q3. requête pour obtenir toutes les villes  de la RD Congo et du Rwanda : ', recuperer_city_inArray);
+  // console.log('q4. requête pour obtenir récuperer toutes les villes sauf Bujumbura, Gisenyi, Goma  : ', recuperer_city_inArray);
+  // console.log('q5. requête pour récuperer les villes dont la population est superieure à 1M  : ', recuperer_city_inArray);
+
+});
+
+
+//////////////////// LES REQUETES COMPOSEES //////////////////////
+
 //6. Récuperer toutes les villes ajoutées entre le 10 et 30 juillet 2022
 // et Arrangez-les selon l'odre decroissant
 const q6 = query(
@@ -344,13 +366,13 @@ const q6 = query(
   );
 
 //7. Récuperer la ville avec comme commune 'Nyarugege'
-const q7 = query(cities, where("communes", "array-contains", "Nyarugenge"));
+const q7 = query(cities, where("communes", "array-contains", "Nyarugenge"));    //ps array-contains est un opérateur signant "les éléments contenus dans le tableau"
 
 
 //8. Récuperer les villes avec comme commune 'Nyarugege', 'Bandale', 'Cyangugu', 'Ibanda'
 const q8 = query(
     cities,
-    where("communes", "array-contains-any", [
+    where("communes", "array-contains-any", [               //ps array-contains-any est un opérateur où la propriété demandée contient au moins l'une des valeurs spécifiées
       "Nyarugenge",
       "Bandale",
       "Cyangugu",
@@ -361,9 +383,18 @@ const q8 = query(
 //9. Récuperer les 3 dernieres villes recement ajoutées
 const q9 = query(cities, orderBy("dateDajout", "desc"), limit(3));
 
+// => Reqêtes composées
+//10.Récuperer toutes les villes de la RD Congo
+//dont la population est inferieure à 3M
+const q10 = query(
+  cities,
+  where("pays", "==", "Rd Congo"),              //revoir ajout index cloud firestore
+  where("population", "<", 3000000)
+);
+
 
 // Écoute des modifications dans les documents qui correspondent à la requête q1
-onSnapshot(q8, (snapshot) => {
+onSnapshot(q10, (snapshot) => {
     let recuperer_city_inArray = []; // Initialisation d'un tableau pour stocker les données des villes récupérées
     // Parcours de chaque document dans le snapshot
     snapshot.docs.forEach((doc) => {
@@ -371,17 +402,42 @@ onSnapshot(q8, (snapshot) => {
         recuperer_city_inArray.push({ ...doc.data(), id: doc.id }); // On utilise spread operator pour obtenir les données du document et on ajoute l'ID du document
     });
 
-    // Affichage des données des villes dans la console
-    // console.log('q1. requête pour obtenir toutes les villes de la RD Congo : ', recuperer_city_inArray);
-    // console.log('q2. requête pour obtenir toutes les villes exceptées celles de la RD Congo : ', recuperer_city_inArray);
-    // console.log('q3. requête pour obtenir toutes les villes  de la RD Congo et du Rwanda : ', recuperer_city_inArray);
-    // console.log('q4. requête pour obtenir récuperer toutes les villes sauf Bujumbura, Gisenyi, Goma  : ', recuperer_city_inArray);
-    // console.log('q5. requête pour récuperer les villes dont la population est superieure à 1M  : ', recuperer_city_inArray);
+      // Affichage des données des villes dans la console
     // console.log('q6. Récuperer toutes les villes ajoutées entre le 10 et 30 juillet 2022 dans un ordre décroissant : ', recuperer_city_inArray);
     // console.log('q7. Récuperer la ville avec comme commune Nyarugege : ', recuperer_city_inArray);
     // console.log('q8. Récuperer les villes avec comme commune Nyarugege, Bandale, Cyangugu, Ibanda : ', recuperer_city_inArray);
-    console.log('q9. Récuperer les 3 dernieres villes recement ajoutées : ', recuperer_city_inArray);
+    console.log('q10. Récuperer toutes les villes de la RD Congo dont la population est inferieure à 3M : ', recuperer_city_inArray);
 
 });
     
+
+/* Requêtes de groupe des collections
+   Référence de la sous-collection (NB: ID unique pour les sous-collections sont des collections d'un document existant (créé dans une collection) 
+                                            COLLECTION
+                                                  |--
+                                                  Document
+                                                    |---
+                                                      collection(sous-collection)
+   */
+
+const habitantsRef = collectionGroup(db, "habitants");    
+
+//11. Récuperer tous les habitants disponibles
+const q11 = query(habitantsRef);
+
+//12. Récuperer les habitants feminins
+const q12 = query(habitantsRef, where("sexe", "==", "F"));
+
+// Écoute des modifications dans les documents qui correspondent à la requête q1
+onSnapshot(q12, (snapshot) => {
+  let recuperer_city_inArray = []; // Initialisation d'un tableau pour stocker les données des villes récupérées
+  // Parcours de chaque document dans le snapshot
+  snapshot.docs.forEach((doc) => {
+      // Ajout des données de chaque document dans le tableau recuperer_city_inArray
+      recuperer_city_inArray.push({ ...doc.data(), id: doc.id }); // On utilise spread operator pour obtenir les données du document et on ajoute l'ID du document
+  });
+
+  // console.log('q11. Récuperer tous les habitants disponibles : ', recuperer_city_inArray);
+  console.log('q12. Récuperer les habitants feminins : ', recuperer_city_inArray);
+});
 
