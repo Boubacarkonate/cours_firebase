@@ -20,7 +20,7 @@ import {
   collectionGroup  // Fonction pour effectuer une requête sur un groupe de collections
 } from "firebase/firestore";
 
-import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithRedirect, signOut } from "firebase/auth";
+import { GoogleAuthProvider, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithRedirect, signOut } from "firebase/auth";
 
 
 // Your web app's Firebase configuration
@@ -383,4 +383,22 @@ logoutBtn.addEventListener('click', () => {
 });
 
 
-////// avec un compte EMAIL et PASSWORD////////////////     PS: bien pour les applications privéess
+////// avec un compte EMAIL et PASSWORD + lien de confirmation ////////////////     PS: bien pour les applications privées
+
+const signupForm = document.querySelector('.signup');
+
+signupForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const email = signupForm.email.value;
+  const password = signupForm.password.value;
+  
+  createUserWithEmailAndPassword(auth, email, password)
+      .then((credentials) => {
+        console.log("utilisateur inscrit", credentials.user);
+        signupForm.reset();
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+});
